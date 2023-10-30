@@ -1,44 +1,67 @@
-let images = [];
-let currentImageIndex = 0;
-let nextImageIndex = 1;
-let alpha = 0;
-let alphaStep = 1;
-let frameInterval = 500;
-let randomness = 60;  // The amount of randomness for the frameInterval
+let imageList = [];
+let currentImage = 0;
+let nextImage = 1;
+let opacityLevel = 0;
+let opacityChangeRate = 1;
+let baseFrameInterval = 500;
+let frameIntervalVariability = 60; // Variability in frame interval
+let speedFactor = 0.2; // Scale the speed of transitions (1 is normal, < 1 is slower, > 1 is faster)
 
 function preload() {
   for (let i = 1; i <= 3; i++) {
-    images.push(loadImage(`assets/art_${i}.jpg`));
+    imageList.push(loadImage(`assets/art_${i}.jpg`));
   }
 }
 
 function setup() {
-  createCanvas(800, 600);
-  frameInterval = random(frameInterval - randomness, frameInterval + randomness);
+  createCanvas(windowWidth, windowHeight);
+  updateFrameInterval();
 }
 
 function draw() {
   background(0);
 
-  // Draw current image
-  tint(255, 255 - alpha);
-  image(images[currentImageIndex], 0, 0, width, height);
+  // Calculate dimensions to make the images cover the canvas
+  let imgAspect = imageList[currentImage].width / imageList[currentImage].height;
+  let canvasAspect = width / height;
+  let drawWidth, drawHeight;
+  
+  if (imgAspect > canvasAspect) {
+    drawWidth = width;
+    drawHeight = width / imgAspect;
+  } else {
+    drawHeight = height;
+    drawWidth = height * imgAspect;
+  }
+  
+  // Draw current image with reduced opacity
+  tint(255, 255 - opacityLevel);
+  image(imageList[currentImage], 0, 0, drawWidth, drawHeight);
 
-  // Draw next image with varying opacity
-  tint(255, alpha);
-  image(images[nextImageIndex], 0, 0, width, height);
+  // Draw next image with increased opacity
+  tint(255, opacityLevel);
+  image(imageList[nextImage], 0, 0, drawWidth, drawHeight);
 
-  // Change alpha and possibly switch images
-  alpha += alphaStep;
-  if (alpha >= 255) {
-    alpha = 0;
-    currentImageIndex = nextImageIndex;
-    nextImageIndex = (currentImageIndex + 1) % images.length;
-    frameInterval = random(frameInterval - randomness, frameInterval + randomness);
+
+  // Modify opacity and switch images if needed
+  opacityLevel += opacityChangeRate * speedFactor;
+  if (opacityLevel >= 255) {
+    opacityLevel = 0;
+    currentImage = nextImage;
+    nextImage = (currentImage + 1) % imageList.length;
+    updateFrameInterval();
   }
 
-  // Randomly decide whether to reverse direction
-  if (frameCount % frameInterval === 0) {
-    alphaStep *= (random(1) > 0.5) ? -1 : 1;
+  // Randomly reverse direction at intervals
+  if (frameCount % Math.floor(baseFrameInterval * speedFactor) === 0) {
+    opacityChangeRate *= (random(1) > 0.5) ? -1 : 1;
   }
+}
+
+function updateFrameInterval() {
+  baseFrameInterval = random(baseFrameInterval - frameIntervalVariability, baseFrameInterval + frameIntervalVariability);
+}
+
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
 }
